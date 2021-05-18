@@ -1,0 +1,16 @@
+org/example/ClientController.java
+ org.example.ClientController
+org/example/ClientView.java
+ org.example.ClientView
+org/example/ClientControllerImpl.java
+ org.example.ClientControllerImpl
+ org.example.ClientControllerImpl$1
+org/example/ClientModel.java
+ org.example.ClientModel
+org/example/ClientViewImpl.java
+ org.example.ClientViewImpl
+ org.example.ClientViewImpl$JTextFieldLimit
+org/example/ClientModelImpl.java
+ org.example.ClientModelImpl
+org/example/ClientStarter.java
+ org.example.ClientStarter

@@ -1,0 +1,5 @@
+rootProject.name = 'demochat2'
+include 'chat-client'
+include 'chat-server'
+include 'chat-network'
+
