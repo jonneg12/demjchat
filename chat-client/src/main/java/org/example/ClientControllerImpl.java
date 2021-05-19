@@ -12,6 +12,7 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
     private static final Logger logger = LoggerFactory.getLogger(ClientControllerImpl.class);
     private static final String DISCONNECT = "DISCONNECT";
     private static final String CONNECT = "CONNECT";
+    private static final String CONTROLLER_NAME = "CLIENT CONTROLLER";
 
     private final ClientView view;
     private final ClientModel model;
@@ -25,103 +26,113 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
     }
 
     @Override
-    public synchronized void setupViewEvents() {
+    public void setupViewEvents() {
+        // action to SEND button
         view.getButtonSend().addActionListener(e -> {
-            logger.info("Trigger button <Send>");
+            logger.info("{}: triggered button <Send>", CONTROLLER_NAME);
             final String text = view.getTextInput().getText();
-            (new SwingWorker<Void, Void>() {
-                @Override
-                protected Void doInBackground() {
-                    logger.info("New worker send text: {}", text);
-                    model.sendNewMessage(text);
-                    logger.info("New worker sent text: {}", text);
-                    return null;
-                }
-            }).execute();
+            if (text.equals("")) {
+                return;
+            }
+            model.sendLine(text);
+            view.getTextInput().setText("");
         });
 
+        // action to INPUT field (when press enter
+        view.getTextInput().addActionListener(e -> {
+            logger.info("{}: triggered input field", CONTROLLER_NAME);
+            final String text = view.getTextInput().getText();
+            if (text.equals("")) {
+                return;
+            }
+            model.sendLine(text);
+            view.getTextInput().setText("");
+        });
+
+
+        // action to CONNECT button
         view.getButtonConnect().addActionListener(e -> {
             final JButton buttonConnect = view.getButtonConnect();
-            logger.info("Trigger button <Connect>. Button state is <{}>", buttonConnect.getText());
+            logger.info("{}: triggered button <Connect>. Button state is <{}>", CONTROLLER_NAME, buttonConnect.getText());
             switch (buttonConnect.getText()) {
                 case CONNECT:
-                    logger.info("Case <Connect>");
+                    logger.info("{}: triggered button <Connect>. Button state is <{}>", CONTROLLER_NAME, buttonConnect.getText());
                     buttonConnect.setText(DISCONNECT);
                     model.setUserName(view.getTextUserName().getText());
                     model.setIPAddress(view.getTextIp().getText());
                     model.setPort(Integer.parseInt(view.getTextPort().getText()));
-//                    (new SwingWorker<Void, Void>() {
-//                        @Override
-//                        protected Void doInBackground() {
-//                            logger.info("Started task: new worker start client");
-                            model.startClient();
-//                            logger.info("Stopped task: start client");
-//                            return null;
-//                        }
-//                    }).execute();
+                    model.startClient();
+                    model.sendNameMessage();
                     break;
                 case DISCONNECT: {
+                    logger.info("{}: triggered button <Connect>. Button state is <{}>", CONTROLLER_NAME, buttonConnect.getText());
                     buttonConnect.setText(CONNECT);
-//                    (new SwingWorker<Void, Void>() {
-//                        @Override
-//                        protected Void doInBackground() {
-//                            logger.info("Started task: new worker stop client");
-                            model.stopClient();
-//                            logger.info("Stopped task: worker stop client");
-//                            return null;
-//                        }
-//                    }).execute();
+                    model.stopClient();
                 }
             }
         });
     }
 
     @Override
-    public synchronized void propertyChange(PropertyChangeEvent evt) {
+    public void propertyChange(PropertyChangeEvent evt) {
         final String propertyName = evt.getPropertyName();
         final Object newValue = evt.getNewValue();
-        logger.info("Fired <{}>", propertyName);
 
         switch (propertyName) {
             case "printMessageLine":
+                logger.info("{}}: event {}", CONTROLLER_NAME, propertyName);
                 String messageLine = (String) newValue;
-                view.getAreaChat().append(messageLine);
+                view.getAreaChat().append(messageLine + System.lineSeparator());
+                view.getAreaChat().setCaretPosition(view.getAreaChat().getDocument().getLength());
                 logger.info("Message line append to chat area");
                 break;
             case "ipAddress":
+                logger.info("{}}: event {}", CONTROLLER_NAME, propertyName);
                 String ipAddress = (String) newValue;
                 view.getTextIp().setText(ipAddress);
                 logger.info("Ip address updated");
                 break;
             case "port":
+                logger.info("{}}: event {}", CONTROLLER_NAME, propertyName);
                 int port = (int) newValue;
                 view.getTextPort().setText(String.valueOf(port));
                 logger.info("Port updated");
                 break;
             case "userName":
+                logger.info("{}: event {}", CONTROLLER_NAME, propertyName);
                 String userName = (String) newValue;
                 view.getTextUserName().setText(userName);
                 logger.info("User name updated");
                 break;
             case "onConnectionReady":
-                view.getTextIp().setEditable(false);
-                view.getTextPort().setEditable(false);
-                view.getTextUserName().setEditable(false);
-                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.green));
-                view.getButtonSend().setEnabled(true);
-                view.getTextInput().setEditable(true);
-                view.getLabelOnlineState().setText("<CONNECTED>");
-                logger.info("CONNECTED");
+                logger.info("{}: event {}", CONTROLLER_NAME, propertyName);
+//                view.getTextIp().setEditable(false);
+//                view.getTextPort().setEditable(false);
+//                view.getTextUserName().setEditable(false);
+//                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.green));
+//                view.getButtonSend().setEnabled(true);
+//                view.getTextInput().setEditable(true);
+//                view.getLabelOnlineState().setText("<CONNECTED>");
+//                logger.info("CONNECTED");
                 break;
-            case "onDisconnect":
-                view.getTextIp().setEditable(true);
-                view.getTextPort().setEditable(true);
-                view.getTextUserName().setEditable(true);
-                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.red));
-                view.getButtonSend().setEnabled(false);
-                view.getTextInput().setEditable(false);
-                view.getLabelOnlineState().setText("<DISCONNECTED>");
-                logger.info("DISCONNECTED");
+            case "connectionDisconnect":
+                logger.info("{}: event {}", CONTROLLER_NAME, propertyName);
+//                view.getTextIp().setEditable(true);
+//                view.getTextPort().setEditable(true);
+//                view.getTextUserName().setEditable(true);
+//                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.red));
+//                view.getButtonSend().setEnabled(false);
+//                view.getTextInput().setEditable(false);
+//                view.getLabelOnlineState().setText("<DISCONNECTED>");
+//                logger.info("DISCONNECTED");
+                break;
+            case "updateUsers":
+                logger.info("{}: event {}", CONTROLLER_NAME, propertyName);
+                String users = (String) newValue;
+                view.getAreaUsers().setText("");
+                view.getAreaUsers().setText("Users online:" + System.lineSeparator() + users + System.lineSeparator());
+                view.getAreaUsers().setCaretPosition(view.getAreaUsers().getDocument().getLength());
+                logger.info("Message line append to chat area");
                 break;
             default:
                 logger.info("Property {} not found", propertyName);

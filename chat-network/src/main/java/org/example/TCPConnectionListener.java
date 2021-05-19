@@ -2,12 +2,12 @@ package org.example;
 
 public interface TCPConnectionListener {
 
-    void onConnectionReady(TCPConnection tcpConnection);
+    void connectionReady(TCPConnection tcpConnection);
 
-    void onReceiveMessage(TCPConnection tcpConnection, Message message);
+    void connectionReceiveMessage(TCPConnection tcpConnection, Message message);
 
-    void onDisconnect(TCPConnection tcpConnection);
+    void connectionDisconnect(TCPConnection tcpConnection);
 
-    void onException(TCPConnection tcpConnection, Exception e);
+    void connectionException(TCPConnection tcpConnection, Exception e);
 
 }

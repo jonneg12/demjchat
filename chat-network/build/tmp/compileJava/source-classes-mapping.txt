@@ -3,6 +3,8 @@ org/example/TCPConnection.java
  org.example.TCPConnection$1
 org/example/TCPConnectionListener.java
  org.example.TCPConnectionListener
+org/example/MessageType.java
+ org.example.MessageType
 org/example/Message.java
  org.example.Message
  org.example.Message$MessageBuilder

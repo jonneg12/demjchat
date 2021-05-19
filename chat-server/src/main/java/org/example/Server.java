@@ -6,8 +6,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 
 public class Server implements TCPConnectionListener {
@@ -16,113 +17,138 @@ public class Server implements TCPConnectionListener {
     private static final String BOT_NAME = "SERVER";
 
     private final int port;
-    private final List<TCPConnection> tcpConnections;
+    private final Map<TCPConnection, String> mapConnectionUserName;
     private final List<String> userNames;
 
     public Server(int port) {
-        this.tcpConnections = new ArrayList<>();
+        this.mapConnectionUserName = new HashMap<>();
         this.userNames = new ArrayList<>();
         this.port = port;
     }
 
-    public synchronized void startServer() {
+    public void startServer() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            logger.info("Server running on port [{}]", serverSocket.getLocalPort());
+            logger.info("SERVER RUNNING on port [{}]", serverSocket.getLocalPort());
             while (true) {
-                new TCPConnection(this, serverSocket.accept());
+                try {
+                    new TCPConnection(this, serverSocket.accept());
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
             }
         } catch (IOException e) {
-            logger.error("Exception on startServer");
+            logger.error(e.getMessage());
             throw new RuntimeException();
         }
     }
 
     @Override
-    public synchronized void onConnectionReady(TCPConnection tcpConnection) {
-        logger.info("Method onConnectionReady (server)");
-        logger.info("Get name method");
-        try {
-            Optional<Message> optionalMessage;
-            if (!(optionalMessage = tcpConnection.readMessage()).equals(Optional.empty())) {
-                Message message = optionalMessage.get();
-                logger.info("Read message {}", message);
-                if (validateUserName(message.getName())) {
-                    onNewUserEntersChat(tcpConnection, message);
-                    sendMessageToAllConnections(getGreetingsMessage(tcpConnection));
-                }
-            } else {
-                logger.info("Read message {}", optionalMessage);
-                sendMessageToOneConnection(tcpConnection,
-                        Message.builder()
-                                .name(BOT_NAME)
-                                .text(WRONG_MESSAGE_FORMAT)
-                                .time(tcpConnection.getTime())
-                                .build());
-                tcpConnection.disconnect();
-            }
-        } catch (IOException e) {
-            onException(tcpConnection, e);
-        }
+    public synchronized void connectionReady(TCPConnection connection) {
+        logger.info("SERVER: CONNECTION READY");
 
+        //test block
+//        mapConnectionUserName.put(connection, "port:" + connection.getSocket().getPort());
+//        logger.info("MAP changed: {}", mapConnectionUserName);
+//        Message message = Message.builder()
+//                .type(MessageType.NOTIFICATION)
+//                .name(BOT_NAME)
+//                .text("New user connected to chat. Let's welcome " + mapConnectionUserName.get(connection))
+//                .time(connection.getTime())
+//                .build();
+//        sendMessageToAllConnections(message);
     }
 
     @Override
-    public synchronized void onReceiveMessage(TCPConnection tcpConnection, Message message) {
-        logger.info("Received message {} from user {}", message, tcpConnection.getName());
+    public synchronized void connectionReceiveMessage(TCPConnection connection, Message message) {
+        logger.info("SERVER: RECEIVE MESSAGE ({})", message);
+        switch (message.getType()) {
+            case TEXT:
+                sendMessageToAllConnections(message);
+                break;
+            case NAME:
+                String name = message.getName();
+                if (!checkNameInList(name)) {
+                    mapConnectionUserName.put(connection, name);
+                    logger.info("MAP changed: {}", mapConnectionUserName);
+                    sendMessageToAllConnections(Message.builder()
+                            .type(MessageType.NOTIFICATION)
+                            .name(BOT_NAME)
+                            .text("New user connected to chat. Let's welcome " + name)
+                            .time(connection.getTime())
+                            .build());
+                    sendMessageToAllConnections(Message.builder()
+                            .type(MessageType.USERS)
+                            .name(BOT_NAME)
+                            .text(getUsersLine())
+                            .build());
+                } else {
+                    sendMessageToOneConnection(Message.builder()
+                                    .type(MessageType.NOTIFICATION)
+                                    .name(BOT_NAME)
+                                    .text("User with name " + name + " is already in chat")
+                                    .time(connection.getTime())
+                                    .build()
+                            , connection);
+                    connection.disconnect();
+                }
+                break;
+            case UNRECOGNIZED:
+                logger.info("GOT UNRECOGNIZED MESSAGE: {}", message);
+                break;
+            case DISCONNECT:
+                break;
+        }
+    }
+
+    @Override
+    public synchronized void connectionDisconnect(TCPConnection connection) {
+        if (mapConnectionUserName.get(connection) == null) {
+            return;
+        }
+        logger.info("SERVER: DISCONNECT");
+        Message message = Message.builder()
+                .type(MessageType.NOTIFICATION)
+                .name(BOT_NAME)
+                .text("Let's say goodbye to " + mapConnectionUserName.get(connection))
+                .time(connection.getTime())
+                .build();
+        mapConnectionUserName.remove(connection);
+        logger.info("MAP changed: {}", mapConnectionUserName);
         sendMessageToAllConnections(message);
     }
 
     @Override
-    public synchronized void onDisconnect(TCPConnection tcpConnection) {
-        logger.info("Method onDisconnect (server)");
-        tcpConnections.remove(tcpConnection);
-        if (tcpConnection.getName() != null) {
-            sendMessageToAllConnections(
-                    Message.builder()
-                            .name(BOT_NAME)
-                            .text("Client " + tcpConnection.getName() + " disconnected\r\n")
-                            .time(tcpConnection.getTime())
-                            .build());
-        }
-    }
-
-    @Override
-    public synchronized void onException(TCPConnection tcpConnection, Exception e) {
-        logger.error("Method onException on server.", e);
-
-    }
-
-    private Message getGreetingsMessage(TCPConnection tcpConnection) {
-        return Message.builder()
-                .name(BOT_NAME)
-                .text("Client " + tcpConnection.getName() + " connected")
-                .time(tcpConnection.getTime())
-                .build();
-    }
-
-    private boolean validateUserName(String name) {
-        boolean isValid = true;
-        //todo: create check user name if it in list
-        logger.info("Name is valid: {}", isValid);
-        return isValid;
-    }
-
-    private void onNewUserEntersChat(TCPConnection tcpConnection, Message message) {
-        final String userName = message.getName();
-        tcpConnection.setName(userName);
-        userNames.add(userName);
-        logger.info("User name {} added to list of user names {}:", userName, userNames);
-        tcpConnections.add(tcpConnection);
-        logger.info("TCPConnection {} added to list of TCPConnections {}", tcpConnection, tcpConnections);
-    }
-
-    private void sendMessageToOneConnection(TCPConnection tcpConnection, Message message) {
-        logger.info("Send message server -> one connection {}", message);
-        tcpConnection.sendMessage(message);
+    public synchronized void connectionException(TCPConnection connection, Exception e) {
+        logger.error("SERVER: EXCEPTION", e);
     }
 
     private void sendMessageToAllConnections(Message message) {
         logger.info("Send message server -> all connections : {}", message);
-        tcpConnections.forEach(x -> x.sendMessage(message));
+        mapConnectionUserName.forEach((k, v) -> k.sendMessage(message));
+    }
+
+    private void sendMessageToOneConnection(Message message, TCPConnection connection) {
+        logger.info("Send message server -> one connection : {}", message);
+        connection.sendMessage(message);
+    }
+
+    private boolean checkNameInList(String name) {
+        final boolean result = mapConnectionUserName
+                .values()
+                .stream()
+                .anyMatch(x -> x.equals(name));
+        logger.error("SERVER: CHECK NAME {} in {} Result: {}.", name, mapConnectionUserName.values(), result);
+        return result;
+    }
+
+    private String getUsersLine() {
+        final String result = mapConnectionUserName
+                .values()
+                .stream()
+                .sorted()
+                .reduce((x, y) ->  " >> " + x + System.lineSeparator() + " >> " + y)
+                .orElse("");
+        logger.error("SERVER: created line of users: {}\n", result);
+        return result;
     }
 }

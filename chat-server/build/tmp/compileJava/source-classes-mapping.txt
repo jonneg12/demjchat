@@ -1,4 +1,5 @@
 org/example/Server.java
  org.example.Server
+ org.example.Server$1
 org/example/ServerStarter.java
  org.example.ServerStarter

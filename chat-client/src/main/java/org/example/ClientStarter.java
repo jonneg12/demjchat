@@ -24,12 +24,12 @@ public class ClientStarter {
                 JFrame frame = createFrame(width, height);
                 frame.add(view.getPanelUI());
                 frame.pack();
+                frame.setResizable(false);
                 frame.setVisible(true);
             });
         } catch (InterruptedException | InvocationTargetException e) {
-            logger.info("Event queue invokeAndWait exception", e);
+            logger.info("CLIENT STARTER: Event queue invokeAndWait exception", e);
         }
-
     }
 
     private static JFrame createFrame(int width, int height) {

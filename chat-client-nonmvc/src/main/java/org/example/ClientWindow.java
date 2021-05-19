@@ -1,22 +1,28 @@
 package org.example;
 
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
+import java.io.IOException;
 
-public class ClientViewImpl implements ClientView {
+public class ClientWindow extends JFrame implements TCPConnectionListener {
+    private static final Logger logger = LoggerFactory.getLogger(ClientWindow.class);
+
+    private static final int WIDTH = 600;
+    private static final int HEIGHT = 400;
+
     private static final int MESSAGE_LENGTH_LIMIT = 120;
     private static final int PORT_LENGTH_LIMIT = 4;
     private static final int IP_ADDRESS_LENGTH_LIMIT = 15;
     private static final int USER_NAME_LENGTH_LIMIT = 20;
     private static final String DEFAULT_PORT = "9997";
     private static final String DEFAULT_IP = "192.168.88.194";
-    private static final String DEFAULT_USER = "User";
-    private static final String DEFAULT_MESSAGE = "message";
 
     private JButton buttonSend;
     private JButton buttonConnect;
@@ -26,32 +32,25 @@ public class ClientViewImpl implements ClientView {
     private JTextField textUserName;
     private JTextArea areaChat;
     private JTextArea areaUsers;
-    private JPanel panelUI;
     private JLabel labelChatClient;
     private JLabel labelOnlineState;
     private JLabel labelIp;
     private JLabel labelPort;
     private JLabel labelUser;
 
-    public ClientViewImpl() {
-        initPanelUI();
+    private TCPConnection connection;
 
-    }
 
-    @Override
-    public JPanel getPanelUI() {
-        return panelUI;
-    }
+    public ClientWindow(String ipAddress, int port) {
 
-    private void initPanelUI() {
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setSize(WIDTH, HEIGHT);
+        setLocationRelativeTo(null);
+
         initLabels();
         initButtons();
         initTextFields();
         initTextAreas();
-
-
-        panelUI = new JPanel(new BorderLayout());
-        panelUI.setBorder(BorderFactory.createLineBorder(Color.RED));
 
         JPanel panelConnect = new JPanel(new MigLayout("insets 5",
                 "[25][50][25][120][35][130][70][100]"
@@ -70,6 +69,7 @@ public class ClientViewImpl implements ClientView {
         ));
         panelSendMessage.setBorder(BorderFactory.createLineBorder(Color.RED));
 
+
         panelConnect.add(labelChatClient, "span3, growx");
         panelConnect.add(labelOnlineState, "span3, wrap");
         panelConnect.add(labelPort, "right");
@@ -79,14 +79,14 @@ public class ClientViewImpl implements ClientView {
         panelConnect.add(labelUser, "right");
         panelConnect.add(textUserName, "span 2, growx");
         panelConnect.add(buttonConnect, "wrap");
-        panelChatAndUsers.add(new JScrollPane(areaChat), "span 6, growx, growy");
-        panelChatAndUsers.add(new JScrollPane(areaUsers), "span, growx, growy");
+        panelChatAndUsers.add(areaChat, "span 6, growx, growy");
+        panelChatAndUsers.add(areaUsers, "span, growx, growy");
         panelSendMessage.add(textInput, "span 7, growx");
         panelSendMessage.add(buttonSend, "growx");
 
-        panelUI.add(panelConnect, BorderLayout.NORTH);
-        panelUI.add(panelChatAndUsers, BorderLayout.CENTER);
-        panelUI.add(panelSendMessage, BorderLayout.SOUTH);
+        add(panelConnect, BorderLayout.NORTH);
+        add(panelChatAndUsers, BorderLayout.CENTER);
+        add(panelSendMessage, BorderLayout.SOUTH);
     }
 
     private void initLabels() {
@@ -101,13 +101,38 @@ public class ClientViewImpl implements ClientView {
         buttonSend = new JButton("SEND");
         buttonSend.setEnabled(true);
         buttonConnect = new JButton("CONNECT");
+        buttonConnect.addActionListener(e -> {
+            logger.info("BUTTON CONNECT");
+            if ((textUserName.getText() == null)) {
+                return;
+            }
+            this.startClientSocket(textIp.getText(), Integer.parseInt(textPort.getText()));
+            connection.sendMessage(Message.builder()
+                    .type(MessageType.NAME)
+                    .name(textUserName.getText())
+                    .text(textInput.getText())
+                    .time(connection.getTime())
+                    .build());
+        });
     }
 
     private void initTextFields() {
-        textInput = new JTextField();
+        textInput = new JTextField("message");
         textInput.setDocument(new JTextFieldLimit(MESSAGE_LENGTH_LIMIT));
         textInput.setEditable(true);
-        textInput.setText(DEFAULT_MESSAGE);
+        textInput.addActionListener(e -> {
+            logger.info("INPUT");
+            if (textInput.getText().equals("")) {
+                return;
+            }
+            connection.sendMessage(Message.builder()
+                    .type(MessageType.TEXT)
+                    .name(textUserName.getText())
+                    .text(textInput.getText())
+                    .time(connection.getTime())
+                    .build());
+            textInput.setText("");
+        });
 
         textIp = new JTextField();
         textIp.setDocument(new JTextFieldLimit(IP_ADDRESS_LENGTH_LIMIT));
@@ -117,68 +142,91 @@ public class ClientViewImpl implements ClientView {
         textPort.setDocument(new JTextFieldLimit(PORT_LENGTH_LIMIT));
         textPort.setText(DEFAULT_PORT);
 
-        textUserName = new JTextField();
+        textUserName = new JTextField("user");
         textUserName.setDocument(new JTextFieldLimit(USER_NAME_LENGTH_LIMIT));
-        textUserName.setText(DEFAULT_USER);
     }
 
     private void initTextAreas() {
         areaChat = new JTextArea();
-        areaChat.setAutoscrolls(true);
         areaChat.setLineWrap(true);
         areaChat.setEditable(false);
         areaChat.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
         areaUsers = new JTextArea();
-        areaUsers.setAutoscrolls(true);
         areaUsers.setLineWrap(true);
         areaUsers.setEditable(false);
         areaUsers.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+
+        buttonSend = new JButton("SEND");
+        buttonSend.addActionListener(e -> {
+            logger.info("INPUT");
+            if (textInput.getText().equals("")) {
+                return;
+            }
+            connection.sendMessage(Message.builder()
+                    .type(MessageType.TEXT)
+                    .name(textUserName.getText())
+                    .text(textInput.getText())
+                    .time(connection.getTime())
+                    .build());
+            textInput.setText("");
+        });
+
+        setVisible(true);
+    }
+
+
+    private void startClientSocket(String ipAddress, int port) {
+
+        logger.info("CLIENT: start");
+
+        try {
+            connection = new TCPConnection(this, ipAddress, port);
+            logger.info("CLIENT: connection status: {}", connection.getSocket().isConnected());
+        } catch (IOException e) {
+            printLine("CONNECTION EXCEPTION" + e.getMessage());
+        }
     }
 
     @Override
-    public JButton getButtonSend() {
-        return buttonSend;
+    public void connectionReady(TCPConnection connection) {
+        logger.info("CLIENT: CONNECTION READY");
+        printLine("Connection ready.");
     }
 
     @Override
-    public JTextField getTextInput() {
-        return textInput;
+    public void connectionReceiveMessage(TCPConnection tcpConnection, Message message) {
+        logger.info("CLIENT: RECEIVE MESSAGE {}", message);
+        String line = getLineFromMessage(message);
+        printLine(line);
+    }
+
+    private String getLineFromMessage(Message message) {
+        return "[" +
+                message.getTime() +
+                "] " +
+                message.getName() +
+                ": " +
+                message.getText();
     }
 
     @Override
-    public JTextField getTextIp() {
-        return textIp;
+    public void connectionDisconnect(TCPConnection tcpConnection) {
+        logger.info("CLIENT: DISCONNECT");
+        printLine("Connection closed.");
     }
 
     @Override
-    public JTextField getTextPort() {
-        return textPort;
+    public void connectionException(TCPConnection tcpConnection, Exception e) {
+        logger.info("CLIENT: EXCEPTION" + e.getMessage());
+        printLine("Connection exception.");
     }
 
-    @Override
-    public JTextField getTextUserName() {
-        return textUserName;
-    }
-
-    @Override
-    public JButton getButtonConnect() {
-        return buttonConnect;
-    }
-
-    @Override
-    public JTextArea getAreaChat() {
-        return areaChat;
-    }
-
-    @Override
-    public JLabel getLabelOnlineState(){
-        return labelOnlineState;
-    }
-
-    @Override
-    public JTextArea getAreaUsers() {
-        return areaUsers;
+    private synchronized void printLine(String line) {
+        SwingUtilities.invokeLater(() -> {
+            areaChat.append(line + System.lineSeparator());
+            areaChat.setCaretPosition(areaChat.getDocument().getLength());
+        });
     }
 
     public static class JTextFieldLimit extends PlainDocument {
@@ -197,5 +245,4 @@ public class ClientViewImpl implements ClientView {
             }
         }
     }
-
 }

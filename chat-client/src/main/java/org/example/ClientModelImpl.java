@@ -14,7 +14,7 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     private String ipAddress;
     private int port;
     private String userName;
-    private TCPConnection tcpConnection;
+    private TCPConnection connection;
 
     public ClientModelImpl() {
         logger.info("Client model created");
@@ -49,95 +49,99 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
 
     @Override
     public void stopClient() {
-        logger.info("Stop client {} isConnected: {}", tcpConnection, tcpConnection.getSocket().isConnected());
-        tcpConnection.disconnect();
-        logger.info("{} isClosed: {}", tcpConnection, tcpConnection.getSocket().isClosed());
+        logger.info("CLIENT MODEL: stop");
+        connection.disconnect();
     }
 
     @Override
     public void startClient() {
-        logger.info("Start client <{}>", userName);
+        logger.info("CLIENT MODEL: start");
+
         try {
-            tcpConnection = new TCPConnection(this, ipAddress, port);
-            tcpConnection.setName(userName);
-            logger.info("Client started");
+            propertyChangeFirer.firePropertyChange("onConnectionReady", "", "");
+            connection = new TCPConnection(this, ipAddress, port);
+            logger.info("CLIENT MODEL: connection status: {}", connection.getSocket().isConnected());
         } catch (IOException e) {
-            logger.error("Start client exception {}", tcpConnection);
-            throw new RuntimeException();
+            printLine("CONNECTION EXCEPTION" + e.getMessage());
         }
     }
 
     @Override
-    public void sendNewMessage(String text) {
-        final Message message = Message.builder()
-                .name(userName)
-                .text(text)
-                .time(tcpConnection.getTime())
-                .build();
-        logger.info("{} send new message {}", userName, message);
-        tcpConnection.sendMessage(message);
+    public void connectionReady(TCPConnection connection) {
+        logger.info("CLIENT MODEL: CONNECTION READY");
+        printLine("Connection ready.");
+
     }
 
     @Override
-    public void onConnectionReady(TCPConnection tcpConnection) {
-        propertyChangeFirer.firePropertyChange("onConnectionReady", "", "");
-        logger.info("onConnection client <{}>", userName);
-        final Message message = Message.builder()
-                .name(userName)
-                .text("connected")
-                .time(tcpConnection.getTime())
-                .build();
-        tcpConnection.sendMessage(message);
+    public void connectionReceiveMessage(TCPConnection connection, Message message) {
+        logger.info("CLIENT MODEL: RECEIVE MESSAGE {}", message);
+        String line;
+        switch (message.getType()) {
+            case TEXT:
+                line = getLineFromMessage(message);
+                printLine(line);
+                break;
+            case NOTIFICATION:
+                line = getLineFromMessage(message);
+                printLine("***" + line);
+                break;
+            case USERS:
+                String users = message.getText();
+                propertyChangeFirer.firePropertyChange("updateUsers", "", users);
+                break;
+            default:
+                logger.info("CLIENT MODEL: receive unrecognized {}", message);
+                break;
+        }
     }
 
     @Override
-    public void onReceiveMessage(TCPConnection tcpConnection, Message message) {
-        logger.info("onReceiveMessage");
-        //TODO: make check to update users list
-        printMessage(message);
+    public void connectionDisconnect(TCPConnection connection) {
+        logger.info("CLIENT MODEL: DISCONNECT");
+        propertyChangeFirer.firePropertyChange("connectionDisconnect", "", "");
+        printLine("Connection closed.");
     }
 
     @Override
-    public void onDisconnect(TCPConnection tcpConnection) {
-        logger.info("onDisconnect client {}", userName);
-        propertyChangeFirer.firePropertyChange("onDisconnect", "", "");
-        printMessage(Message.builder()
+    public void connectionException(TCPConnection connection, Exception e) {
+        logger.info("CLIENT MODEL: EXCEPTION" + e.getMessage());
+        printLine("Connection exception.");
+    }
+
+
+    @Override
+    public void sendLine(String line){
+        logger.info("CLIENT MODEL: send message from line {}", line);
+        connection.sendMessage(Message.builder()
+                .type(MessageType.TEXT)
                 .name(userName)
-                .text("Connection closed")
-                .time(tcpConnection.getTime())
+                .text(line)
+                .time(connection.getTime())
                 .build());
     }
 
     @Override
-    public void onException(TCPConnection tcpConnection, Exception e) {
-        logger.info("onException client {}", userName);
-        printMessage(Message.builder()
+    public void sendNameMessage() {
+        logger.info("CLIENT MODEL: Send name message");
+        connection.sendMessage(Message.builder()
+                .type(MessageType.NAME)
                 .name(userName)
-                .text("Connection exception")
-                .time(tcpConnection.getTime())
+                .text("")
+                .time(connection.getTime())
                 .build());
     }
 
-    private void printMessage(Message message) {
-        logger.info("Print message {}", message);
-        printMessageLine(message);
+    private synchronized void printLine(String line) {
+        propertyChangeFirer.firePropertyChange("printMessageLine", "", line);
     }
 
-    private void printMessageLine(Message message) {
-        propertyChangeFirer.firePropertyChange("printMessageLine", "", convertMessageToLine(message));
-    }
-
-    private String convertMessageToLine(Message message) {
-        final StringBuilder builder = new StringBuilder();
-        String time = message.getTime().substring(0, 8);
-        return builder
-                .append('[')
-                .append(time)
-                .append("] ")
-                .append(message.getName())
-                .append(": ")
-                .append(message.getText())
-                .append(System.lineSeparator())
-                .toString();
+    private String getLineFromMessage(Message message) {
+        return "[" +
+                message.getTime() +
+                "] " +
+                message.getName() +
+                ": " +
+                message.getText();
     }
 }

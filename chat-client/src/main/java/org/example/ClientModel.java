@@ -15,5 +15,7 @@ public interface ClientModel {
 
     void startClient();
 
-    void sendNewMessage(String text);
+    void sendLine(String line);
+
+    void sendNameMessage();
 }

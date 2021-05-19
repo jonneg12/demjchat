@@ -5,11 +5,21 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/../chat-client-nonmvc" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/../chat-client-nonmvc" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/chat-client" />
+            <option value="$PROJECT_DIR$/chat-client-nonmvc" />
             <option value="$PROJECT_DIR$/chat-network" />
             <option value="$PROJECT_DIR$/chat-server" />
           </set>

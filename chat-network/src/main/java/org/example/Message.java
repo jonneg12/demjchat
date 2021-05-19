@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 
 public class Message {
+    private MessageType type;
     private String name;
     private String text;
     private String time;
