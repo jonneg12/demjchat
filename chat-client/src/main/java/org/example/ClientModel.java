@@ -5,17 +5,17 @@ import java.beans.PropertyChangeListener;
 public interface ClientModel {
     void addListener(PropertyChangeListener listener);
 
-    void setIPAddress(String ipAddress);
+    boolean setIPAddress(String ipAddress);
 
-    void setPort(int port);
+    boolean setPort(String port);
 
-    void setUserName(String name);
+    boolean setUserName(String name);
 
     void stopClient();
 
     void startClient();
 
-    void sendLine(String line);
+    void sendTextMessage(String line);
 
     void sendNameMessage();
 }

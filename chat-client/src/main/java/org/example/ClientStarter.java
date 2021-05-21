@@ -10,7 +10,6 @@ import java.lang.reflect.InvocationTargetException;
 public class ClientStarter {
     private static final Logger logger = LoggerFactory.getLogger(ClientStarter.class);
 
-
     public static void main(String[] args) {
         int width = 600;
         int height = 400;

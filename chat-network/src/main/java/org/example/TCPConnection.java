@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -13,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 public class TCPConnection {
     private final static Logger logger = LoggerFactory.getLogger(TCPConnection.class);
     private final static String MESSAGES_SEPARATOR = "\r" + System.lineSeparator();
+    private final static String TCP_NAME = "TCP";
 
     private final TCPConnectionListener listener;
     private final Socket socket;
@@ -20,7 +22,6 @@ public class TCPConnection {
     private final BufferedWriter writer;
     private final BufferedReader reader;
     private final Gson gson;
-
 
     public Socket getSocket() {
         return socket;
@@ -43,13 +44,21 @@ public class TCPConnection {
                 try {
                     listener.connectionReady(TCPConnection.this);
                     while (!receiver.isInterrupted()) {
-                        String line = reader.readLine();
-                        logger.info("GOT line {}", line);
-                        Message message = readMessage(line);
-                        listener.connectionReceiveMessage(TCPConnection.this, message);
+                         String line = reader.readLine();
 
-                    }
-                } catch (Exception e) {
+                            if (line == null) {
+                                return;
+                            }
+                            logger.info("{}: got line {}", TCP_NAME, line);
+                            Message message = readMessage(line);
+                            listener.connectionReceiveMessage(TCPConnection.this, message);
+                        }
+//                    }
+                } catch (SocketException e) {
+                    logger.error("{}: socket exception. Socket is close: {}", TCP_NAME, socket.isClosed(), e);
+                    listener.connectionException(TCPConnection.this, e);
+                } catch (IOException e) {
+                    logger.error("{}: error exception", TCP_NAME, e);
                     listener.connectionException(TCPConnection.this, e);
                 } finally {
                     listener.connectionDisconnect(TCPConnection.this);
@@ -59,11 +68,11 @@ public class TCPConnection {
         receiver.start();
     }
 
-    private Message readMessage(String line) {
+    private synchronized Message readMessage(String line) {
         Message message;
         try {
             message = gson.fromJson(line, Message.class);
-            logger.info("READ {}", message);
+            logger.info("{}: read {}", TCP_NAME, message);
         } catch (IllegalStateException e) {
             message = Message.builder()
                     .type(MessageType.UNRECOGNIZED)
@@ -76,30 +85,32 @@ public class TCPConnection {
     }
 
     public synchronized void sendMessage(Message message) {
-        logger.info("SEND {}", message);
+        logger.info("{}: send {}", TCP_NAME, message);
         try {
             String line = gson.toJson(message);
             writer.write(line + MESSAGES_SEPARATOR);
             writer.flush();
         } catch (IOException e) {
+            logger.error("{}: send {}", TCP_NAME, message);
+
             listener.connectionException(TCPConnection.this, e);
             disconnect();
         }
     }
 
     public synchronized void disconnect() {
-        logger.info("DISCONNECT {}", this);
+        logger.info("{}: disconnect {}", TCP_NAME, this);
         try {
             receiver.interrupt();
             socket.close();
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error("{}: exception disconnect ", TCP_NAME, e);
             listener.connectionException(TCPConnection.this, e);
         }
     }
 
-    public String getTime() {
-        return LocalTime.now().format(DateTimeFormatter.ISO_TIME).substring(0, 5);
+    public static String getTime() {
+        return LocalTime.now().format(DateTimeFormatter.ISO_TIME).substring(0, 8);
     }
 
     @Override

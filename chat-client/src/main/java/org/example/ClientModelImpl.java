@@ -9,15 +9,17 @@ import java.io.IOException;
 
 public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     private static final Logger logger = LoggerFactory.getLogger(ClientModelImpl.class);
+    private static final String CLIENT_MODEL = "CLIENT MODEL";
 
     private final SwingPropertyChangeSupport propertyChangeFirer;
-    private String ipAddress;
+
     private int port;
+    private String ipAddress;
     private String userName;
     private TCPConnection connection;
 
     public ClientModelImpl() {
-        logger.info("Client model created");
+        logger.info("{} created", CLIENT_MODEL);
         this.propertyChangeFirer = new SwingPropertyChangeSupport(this);
     }
 
@@ -27,55 +29,84 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     }
 
     @Override
-    public void setIPAddress(String ipAddress) {
-        logger.info("Set ip address {}", ipAddress);
-        this.ipAddress = ipAddress;
-        propertyChangeFirer.firePropertyChange("ipAddress", "", ipAddress);
-    }
-
-    @Override
-    public void setPort(int port) {
-        logger.info("Set port {}", port);
-        this.port = port;
-        propertyChangeFirer.firePropertyChange("port", "", port);
-    }
-
-    @Override
-    public void setUserName(String userName) {
-        logger.info("Set userName {}", userName);
+    public boolean setUserName(String userName) {
+        if ("".equals(userName)) {
+            logger.info("{}: userName is empty", CLIENT_MODEL);
+            // TODO fire about blanc user name value
+            return false;
+        }
         this.userName = userName;
+        logger.info("{}: set user name <{}>", CLIENT_MODEL, userName);
         propertyChangeFirer.firePropertyChange("userName", "", userName);
+        return true;
+    }
+
+    @Override
+    public boolean setIPAddress(String ipAddress) {
+        if ("".equals(ipAddress)) {
+            logger.info("{}: ip address is empty", CLIENT_MODEL);
+            return false;
+        }
+        this.ipAddress = ipAddress;
+        logger.info("{}: set ip address <{}>", CLIENT_MODEL, ipAddress);
+        propertyChangeFirer.firePropertyChange("ipAddress", "", ipAddress);
+        return true;
+    }
+
+    @Override
+    public boolean setPort(String portLine) {
+        if ("".equals(portLine)) {
+            logger.info("{}: port is empty", CLIENT_MODEL);
+            // TODO fire about blanc port value
+            return false;
+        }
+        int port;
+        try {
+             port = Integer.parseInt(portLine);
+            if (!checkPort(port)) {
+                logger.info("{}: got wrong value of port <{}>", CLIENT_MODEL, port);
+                return false;
+                // TODO: maybe fire about wrong port value
+            }
+            this.port = port;
+            propertyChangeFirer.firePropertyChange("port", "", port);
+            logger.info("{}: set port <{}>", CLIENT_MODEL, port);
+            return true;
+        } catch (NumberFormatException e) {
+            // TODO: maybe fire about wrong port value
+            logger.info("{}: got wrong format of port <{}>", CLIENT_MODEL, portLine);
+            return false;
+        }
     }
 
     @Override
     public void stopClient() {
-        logger.info("CLIENT MODEL: stop");
+        logger.info("{}: stop", CLIENT_MODEL);
+        connection.sendMessage(buildMessage(MessageType.DISCONNECT, ""));
         connection.disconnect();
     }
 
     @Override
     public void startClient() {
-        logger.info("CLIENT MODEL: start");
-
+        logger.info("{}: start", CLIENT_MODEL);
         try {
-            propertyChangeFirer.firePropertyChange("onConnectionReady", "", "");
             connection = new TCPConnection(this, ipAddress, port);
-            logger.info("CLIENT MODEL: connection status: {}", connection.getSocket().isConnected());
         } catch (IOException e) {
+            logger.info("{}: connection exception", CLIENT_MODEL);
             printLine("CONNECTION EXCEPTION" + e.getMessage());
         }
     }
 
     @Override
     public void connectionReady(TCPConnection connection) {
-        logger.info("CLIENT MODEL: CONNECTION READY");
+        propertyChangeFirer.firePropertyChange("onConnectionReady", "", "ready");
+        logger.info("{}: connection ready", CLIENT_MODEL);
         printLine("Connection ready.");
-
     }
 
     @Override
     public void connectionReceiveMessage(TCPConnection connection, Message message) {
-        logger.info("CLIENT MODEL: RECEIVE MESSAGE {}", message);
+        logger.info("{}: receive <{}>", CLIENT_MODEL, message);
         String line;
         switch (message.getType()) {
             case TEXT:
@@ -91,49 +122,52 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
                 propertyChangeFirer.firePropertyChange("updateUsers", "", users);
                 break;
             default:
-                logger.info("CLIENT MODEL: receive unrecognized {}", message);
+                logger.info("{}: receive unrecognized message <{}>", CLIENT_MODEL, message);
                 break;
         }
     }
 
     @Override
     public void connectionDisconnect(TCPConnection connection) {
-        logger.info("CLIENT MODEL: DISCONNECT");
-        propertyChangeFirer.firePropertyChange("connectionDisconnect", "", "");
+        logger.info("{}: connection disconnect", CLIENT_MODEL);
+        propertyChangeFirer.firePropertyChange("connectionDisconnect", "", "disconnect");
         printLine("Connection closed.");
     }
 
     @Override
     public void connectionException(TCPConnection connection, Exception e) {
-        logger.info("CLIENT MODEL: EXCEPTION" + e.getMessage());
+        logger.info("{}: connection exception", CLIENT_MODEL, e);
         printLine("Connection exception.");
     }
 
 
     @Override
-    public void sendLine(String line){
-        logger.info("CLIENT MODEL: send message from line {}", line);
-        connection.sendMessage(Message.builder()
-                .type(MessageType.TEXT)
-                .name(userName)
-                .text(line)
-                .time(connection.getTime())
-                .build());
+    public void sendTextMessage(String line) {
+        logger.info("{}: send line <{}>", CLIENT_MODEL, line);
+        connection.sendMessage(buildMessage(MessageType.TEXT, line));
     }
 
     @Override
     public void sendNameMessage() {
-        logger.info("CLIENT MODEL: Send name message");
-        connection.sendMessage(Message.builder()
-                .type(MessageType.NAME)
+        logger.info("{}: connection disconnect", CLIENT_MODEL);
+        connection.sendMessage(buildMessage(MessageType.NAME, ""));
+    }
+
+    public Message buildMessage(MessageType type, String text) {
+        return Message.builder()
+                .type(type)
                 .name(userName)
-                .text("")
-                .time(connection.getTime())
-                .build());
+                .text(text)
+                .time(TCPConnection.getTime())
+                .build();
     }
 
     private synchronized void printLine(String line) {
         propertyChangeFirer.firePropertyChange("printMessageLine", "", line);
+    }
+
+    private boolean checkPort(int value) {
+        return value > 0 && value < 65535;
     }
 
     private String getLineFromMessage(Message message) {

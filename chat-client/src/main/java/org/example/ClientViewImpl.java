@@ -10,13 +10,13 @@ import java.awt.*;
 
 public class ClientViewImpl implements ClientView {
     private static final int MESSAGE_LENGTH_LIMIT = 120;
-    private static final int PORT_LENGTH_LIMIT = 4;
+    private static final int PORT_LENGTH_LIMIT = 5;
     private static final int IP_ADDRESS_LENGTH_LIMIT = 15;
     private static final int USER_NAME_LENGTH_LIMIT = 20;
     private static final String DEFAULT_PORT = "9997";
     private static final String DEFAULT_IP = "192.168.88.194";
     private static final String DEFAULT_USER = "User";
-    private static final String DEFAULT_MESSAGE = "message";
+    private static final String DEFAULT_MESSAGE = "Hello!";
 
     private JButton buttonSend;
     private JButton buttonConnect;
@@ -35,7 +35,6 @@ public class ClientViewImpl implements ClientView {
 
     public ClientViewImpl() {
         initPanelUI();
-
     }
 
     @Override
@@ -49,26 +48,25 @@ public class ClientViewImpl implements ClientView {
         initTextFields();
         initTextAreas();
 
-
         panelUI = new JPanel(new BorderLayout());
         panelUI.setBorder(BorderFactory.createLineBorder(Color.RED));
 
         JPanel panelConnect = new JPanel(new MigLayout("insets 5",
                 "[25][50][25][120][35][130][70][100]"
         ));
-        panelConnect.setBorder(BorderFactory.createLineBorder(Color.RED));
+//        panelConnect.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
 
         JPanel panelChatAndUsers = new JPanel(new MigLayout("insets 5",
                 "[25][50][25][200][35][50][70][100]",
                 "[350]"
         ));
-        panelChatAndUsers.setBorder(BorderFactory.createLineBorder(Color.RED));
+//        panelChatAndUsers.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
         JPanel panelSendMessage = new JPanel(new MigLayout("insets 5",
                 "[25][50][25][200][35][50][70][100]"
         ));
-        panelSendMessage.setBorder(BorderFactory.createLineBorder(Color.RED));
+//        panelSendMessage.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
         panelConnect.add(labelChatClient, "span3, growx");
         panelConnect.add(labelOnlineState, "span3, wrap");
@@ -91,7 +89,7 @@ public class ClientViewImpl implements ClientView {
 
     private void initLabels() {
         labelChatClient = new JLabel("CHAT CLIENT");
-        labelOnlineState = new JLabel("<DISCONNECTED>");
+        labelOnlineState = new JLabel("DISCONNECTED");
         labelIp = new JLabel("IP:");
         labelPort = new JLabel("Port:");
         labelUser = new JLabel("User:");

@@ -2,11 +2,11 @@ org/example/ClientController.java
  org.example.ClientController
 org/example/ClientView.java
  org.example.ClientView
+org/example/ClientModel.java
+ org.example.ClientModel
 org/example/ClientViewImpl.java
  org.example.ClientViewImpl
  org.example.ClientViewImpl$JTextFieldLimit
-org/example/ClientModel.java
- org.example.ClientModel
 org/example/ClientControllerImpl.java
  org.example.ClientControllerImpl
 org/example/ClientModelImpl.java
