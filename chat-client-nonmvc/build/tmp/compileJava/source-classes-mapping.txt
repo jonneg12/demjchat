@@ -1,0 +1,5 @@
+org/example/ClientNonMVCStarter.java
+ org.example.ClientNonMVCStarter
+org/example/ClientWindow.java
+ org.example.ClientWindow
+ org.example.ClientWindow$JTextFieldLimit

@@ -1,0 +1,21 @@
+2021-05-21 00:20:12.151 [Thread-17] INFO  org.example.Server - SERVER connection ready
+2021-05-21 00:20:12.320 [Thread-17] INFO  org.example.TCPConnection - TCP: got line {"type":"NAME","name":"User","text":"","time":"00:20:12"}
+2021-05-21 00:20:12.321 [Thread-17] INFO  org.example.TCPConnection - TCP: read Message(type=NAME, name=User, text=, time=00:20:12)
+2021-05-21 00:20:12.321 [Thread-17] INFO  org.example.Server - SERVER: receive (Message(type=NAME, name=User, text=, time=00:20:12))
+2021-05-21 00:20:12.322 [Thread-17] ERROR org.example.Server - SERVER: check name User in [] Result: false.
+2021-05-21 00:20:12.322 [Thread-17] INFO  org.example.Server - SERVER: map changed to <{Connection(/192.168.88.194:48440)=User}>
+2021-05-21 00:20:12.322 [Thread-17] INFO  org.example.Server - SERVER: send message server -> all connections : Message(type=NOTIFICATION, name=SERVER, text=User joined to the chat, time=00:20:12)
+2021-05-21 00:20:12.322 [Thread-17] INFO  org.example.TCPConnection - TCP: send Message(type=NOTIFICATION, name=SERVER, text=User joined to the chat, time=00:20:12)
+2021-05-21 00:20:12.323 [Thread-17] INFO  org.example.Server - SERVER: created line of users:
+ > User
+2021-05-21 00:20:12.324 [Thread-17] INFO  org.example.Server - SERVER: send message server -> all connections : Message(type=USERS, name=SERVER, text= > User, time=00:20:12)
+2021-05-21 00:20:12.324 [Thread-17] INFO  org.example.TCPConnection - TCP: send Message(type=USERS, name=SERVER, text= > User, time=00:20:12)
+2021-05-21 00:20:28.030 [main] INFO  org.example.ServerConfigLoader - Config loaded from server.properties : ServerConfig(port=9996)
+2021-05-21 00:20:28.087 [main] INFO  org.example.Server - SERVER: running on port [9996]
+2021-05-21 00:20:47.857 [main] INFO  org.example.ClientModelImpl - CLIENT MODEL created
+2021-05-21 00:20:48.072 [Thread-17] INFO  org.example.Server - SERVER: user <User> disconnected
+2021-05-21 00:20:48.073 [Thread-17] INFO  org.example.Server - SERVER: created line of users:
+
+2021-05-21 00:20:48.073 [Thread-17] INFO  org.example.Server - SERVER: send message server -> all connections : Message(type=USERS, name=SERVER, text=, time=00:20:48)
+2021-05-21 00:20:48.073 [Thread-17] INFO  org.example.Server - SERVER: map changed to <{}>
+2021-05-21 00:20:48.073 [Thread-17] INFO  org.example.Server - SERVER: send message server -> all connections : Message(type=NOTIFICATION, name=SERVER, text=User User left the chat, time=00:20:48)
