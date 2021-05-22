@@ -27,11 +27,10 @@ public class ServerConfigLoader {
             logger.info("Config loaded from {} : {}", propertiesFileName, config);
             return Optional.of(config);
         } catch (NumberFormatException | ParameterIsNorValidException e) {
-            logger.error("Not valid one or more parameters", e);
+            logger.error("One or more parameters are not valid", e);
             return Optional.empty();
         }
     }
-
 
     private int checkPort(int value) {
         if (value > 0 && value < 65535) {
@@ -40,7 +39,6 @@ public class ServerConfigLoader {
             throw new ParameterIsNorValidException("Wrong port value (current value: " + value + ")");
         }
     }
-
 
     public Properties loadProperties() {
         Properties properties = new Properties();

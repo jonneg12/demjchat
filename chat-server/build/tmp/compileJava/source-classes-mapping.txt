@@ -3,10 +3,10 @@ org/example/ServerConfig.java
  org.example.ServerConfig$ServerConfigBuilder
 org/example/ParameterIsNorValidException.java
  org.example.ParameterIsNorValidException
-org/example/ServerConfigLoader.java
- org.example.ServerConfigLoader
 org/example/Server.java
  org.example.Server
  org.example.Server$1
+org/example/ServerConfigLoader.java
+ org.example.ServerConfigLoader
 org/example/ServerStarter.java
  org.example.ServerStarter

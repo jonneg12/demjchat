@@ -31,11 +31,11 @@ public class Server implements TCPConnectionListener {
                 try {
                     new TCPConnection(this, serverSocket.accept());
                 } catch (IOException e) {
-                    logger.error("{}: exception on running server ", SERVER_NAME, e);
+                    logger.error("{}: exception on creating new connection", SERVER_NAME, e);
                 }
             }
         } catch (IOException e) {
-            logger.error("{}: server socket error", SERVER_NAME);
+            logger.error("{}: server socket error", SERVER_NAME, e);
             throw new RuntimeException();
         }
     }
@@ -45,6 +45,7 @@ public class Server implements TCPConnectionListener {
         logger.info("{} connection ready", SERVER_NAME);
     }
 
+    // called then the line was receive
     @Override
     public synchronized void connectionReceiveMessage(TCPConnection connection, Message message) {
         logger.info("{}: receive ({})", SERVER_NAME, message);
@@ -75,9 +76,10 @@ public class Server implements TCPConnectionListener {
         }
     }
 
-    // method is called in finally block of TCPConnection after connection thread interrupt
+    // called in finally then listening user thread is interrupted
     @Override
     public synchronized void connectionDisconnect(TCPConnection connection) {
+        // not registered client does not need notification
         if (mapConnectionUserName.get(connection) == null) {
             return;
         }

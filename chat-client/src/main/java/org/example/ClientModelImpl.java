@@ -10,6 +10,7 @@ import java.io.IOException;
 public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     private static final Logger logger = LoggerFactory.getLogger(ClientModelImpl.class);
     private static final String CLIENT_MODEL = "CLIENT MODEL";
+    private static final String WRONG_FIELD_MESSAGE_PATTERN = "%s value is wrong! Cannot create connection";
 
     private final SwingPropertyChangeSupport propertyChangeFirer;
 
@@ -17,6 +18,7 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     private String ipAddress;
     private String userName;
     private TCPConnection connection;
+    private boolean connected = false;
 
     public ClientModelImpl() {
         logger.info("{} created", CLIENT_MODEL);
@@ -30,9 +32,9 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
 
     @Override
     public boolean setUserName(String userName) {
-        if ("".equals(userName)) {
-            logger.info("{}: userName is empty", CLIENT_MODEL);
-            // TODO fire about blanc user name value
+        if (userName == null || "".equals(userName)) {
+            logger.info("{}: userName is wrong", CLIENT_MODEL);
+            printLine(String.format(WRONG_FIELD_MESSAGE_PATTERN, "User name"));
             return false;
         }
         this.userName = userName;
@@ -45,6 +47,7 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     public boolean setIPAddress(String ipAddress) {
         if ("".equals(ipAddress)) {
             logger.info("{}: ip address is empty", CLIENT_MODEL);
+            printLine(String.format(WRONG_FIELD_MESSAGE_PATTERN, "Ip address"));
             return false;
         }
         this.ipAddress = ipAddress;
@@ -55,35 +58,29 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
 
     @Override
     public boolean setPort(String portLine) {
+        String wrongPort = String.format(WRONG_FIELD_MESSAGE_PATTERN, "Port");
         if ("".equals(portLine)) {
             logger.info("{}: port is empty", CLIENT_MODEL);
-            // TODO fire about blanc port value
+            printLine(wrongPort);
             return false;
         }
         int port;
         try {
-             port = Integer.parseInt(portLine);
+            port = Integer.parseInt(portLine);
             if (!checkPort(port)) {
                 logger.info("{}: got wrong value of port <{}>", CLIENT_MODEL, port);
+                printLine(wrongPort);
                 return false;
-                // TODO: maybe fire about wrong port value
             }
             this.port = port;
             propertyChangeFirer.firePropertyChange("port", "", port);
             logger.info("{}: set port <{}>", CLIENT_MODEL, port);
             return true;
         } catch (NumberFormatException e) {
-            // TODO: maybe fire about wrong port value
             logger.info("{}: got wrong format of port <{}>", CLIENT_MODEL, portLine);
+            printLine(wrongPort);
             return false;
         }
-    }
-
-    @Override
-    public void stopClient() {
-        logger.info("{}: stop", CLIENT_MODEL);
-        connection.sendMessage(buildMessage(MessageType.DISCONNECT, ""));
-        connection.disconnect();
     }
 
     @Override
@@ -91,10 +88,24 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
         logger.info("{}: start", CLIENT_MODEL);
         try {
             connection = new TCPConnection(this, ipAddress, port);
+            connected = true;
         } catch (IOException e) {
             logger.info("{}: connection exception", CLIENT_MODEL);
-            printLine("CONNECTION EXCEPTION" + e.getMessage());
+            printLine(String.format("Cannot connect to this server ip: %s, port: %s", ipAddress, port));
         }
+    }
+
+    @Override
+    public void stopClient() {
+        logger.info("{}: stop", CLIENT_MODEL);
+        connection.sendMessage(buildMessage(MessageType.DISCONNECT, ""));
+        connected = false;
+        connection.disconnect();
+    }
+
+    @Override
+    public boolean isConnected() {
+        return connected;
     }
 
     @Override
@@ -131,6 +142,7 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
     public void connectionDisconnect(TCPConnection connection) {
         logger.info("{}: connection disconnect", CLIENT_MODEL);
         propertyChangeFirer.firePropertyChange("connectionDisconnect", "", "disconnect");
+        connected = false;
         printLine("Connection closed.");
     }
 
@@ -139,7 +151,6 @@ public class ClientModelImpl implements TCPConnectionListener, ClientModel {
         logger.info("{}: connection exception", CLIENT_MODEL, e);
         printLine("Connection exception.");
     }
-
 
     @Override
     public void sendTextMessage(String line) {

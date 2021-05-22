@@ -1,6 +1,6 @@
 <configuration>
     <appender name="rollingfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>task4/logs/log.log</file>
+        <file>logs/log.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>$logs/log.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>

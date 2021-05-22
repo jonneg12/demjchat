@@ -30,6 +30,9 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
         // action to SEND button
         view.getButtonSend().addActionListener(e -> {
             logger.info("{}: triggered button <Send>", CONTROLLER_NAME);
+            if (!model.isConnected()) {
+                return;
+            }
             final String text = view.getTextInput().getText();
             if (text.equals("")) {
                 return;
@@ -38,9 +41,12 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
             view.getTextInput().setText("");
         });
 
-        // action to INPUT field (when press enter
+        // action to INPUT field (when press enter)
         view.getTextInput().addActionListener(e -> {
             logger.info("{}: triggered input field", CONTROLLER_NAME);
+            if (!model.isConnected()) {
+                return;
+            }
             final String text = view.getTextInput().getText();
             if (text.equals("")) {
                 return;
@@ -55,11 +61,18 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
             final JButton buttonConnect = view.getButtonConnect();
             switch (buttonConnect.getText()) {
                 case CONNECT:
-                    logger.info("{}: triggered button <Connect>. Button state is <{}>", CONTROLLER_NAME, buttonConnect.getText());
+                    logger.info("{}: triggered button <Connect>. Button state is <{}> Connection is connected: {}", CONTROLLER_NAME, buttonConnect.getText(), model.isConnected());
+                    if(model.isConnected()){
+                        return;
+                    }
                     if (model.setUserName(view.getTextUserName().getText())
                             && model.setIPAddress(view.getTextIp().getText())
                             && model.setPort(view.getTextPort().getText())) {
+                        logger.info("{}: start new client accepted", CONTROLLER_NAME);
                         model.startClient();
+                        if (!model.isConnected()) {
+                            return;
+                        }
                         model.sendNameMessage();
                     }
                     break;
@@ -108,10 +121,11 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
                 view.getTextIp().setEditable(false);
                 view.getTextPort().setEditable(false);
                 view.getTextUserName().setEditable(false);
-                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.green));
+                view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.GREEN));
                 view.getButtonSend().setEnabled(true);
                 view.getTextInput().setEditable(true);
                 view.getLabelOnlineState().setText("CONNECTED");
+                view.getLabelOnlineState().setForeground(Color.ORANGE);
                 view.getButtonConnect().setText(DISCONNECT);
                 logger.info("{}: CONNECTED", CONTROLLER_NAME);
                 break;
@@ -121,9 +135,10 @@ public class ClientControllerImpl implements ClientController, PropertyChangeLis
                 view.getTextPort().setEditable(true);
                 view.getTextUserName().setEditable(true);
                 view.getPanelUI().setBorder(BorderFactory.createLineBorder(Color.red));
-                view.getButtonSend().setEnabled(false);
-                view.getTextInput().setEditable(false);
+//                view.getButtonSend().setEnabled(false);
+//                view.getTextInput().setEditable(false);
                 view.getLabelOnlineState().setText("DISCONNECTED");
+                view.getLabelOnlineState().setForeground(Color.RED);
                 view.getButtonConnect().setText(CONNECT);
                 logger.info("{}: DISCONNECTED", CONTROLLER_NAME);
                 break;

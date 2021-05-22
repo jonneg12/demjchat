@@ -3,6 +3,7 @@ package org.example;
 import java.beans.PropertyChangeListener;
 
 public interface ClientModel {
+
     void addListener(PropertyChangeListener listener);
 
     boolean setIPAddress(String ipAddress);
@@ -18,4 +19,6 @@ public interface ClientModel {
     void sendTextMessage(String line);
 
     void sendNameMessage();
+
+    boolean isConnected();
 }

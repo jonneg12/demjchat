@@ -52,7 +52,7 @@ public class ClientViewImpl implements ClientView {
         panelUI.setBorder(BorderFactory.createLineBorder(Color.RED));
 
         JPanel panelConnect = new JPanel(new MigLayout("insets 5",
-                "[25][50][25][120][35][130][70][100]"
+                "[25][50][25][120][35][130][70][120]"
         ));
 //        panelConnect.setBorder(BorderFactory.createLineBorder(Color.BLUE));
 
@@ -90,6 +90,7 @@ public class ClientViewImpl implements ClientView {
     private void initLabels() {
         labelChatClient = new JLabel("CHAT CLIENT");
         labelOnlineState = new JLabel("DISCONNECTED");
+        labelOnlineState.setForeground(Color.RED);
         labelIp = new JLabel("IP:");
         labelPort = new JLabel("Port:");
         labelUser = new JLabel("User:");
@@ -97,14 +98,15 @@ public class ClientViewImpl implements ClientView {
 
     private void initButtons() {
         buttonSend = new JButton("SEND");
-        buttonSend.setEnabled(true);
+        buttonSend.setEnabled(false);
         buttonConnect = new JButton("CONNECT");
+        buttonConnect.setEnabled(true);
     }
 
     private void initTextFields() {
         textInput = new JTextField();
         textInput.setDocument(new JTextFieldLimit(MESSAGE_LENGTH_LIMIT));
-        textInput.setEditable(true);
+        textInput.setEditable(false);
         textInput.setText(DEFAULT_MESSAGE);
 
         textIp = new JTextField();
